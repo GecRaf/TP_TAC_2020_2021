@@ -18,7 +18,7 @@ dseg	segment para public 'data'
 
 
 		STR12	 		DB 		"            "	; String para 12 digitos
-		DDMMAAAA 		db		"                     "
+		DDMMAAAA 		db		"            "
 		
 		Horas			dw		0				; Vai guardar a HORA actual
 		Minutos			dw		0				; Vai guardar os minutos actuais
