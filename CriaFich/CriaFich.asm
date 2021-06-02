@@ -52,7 +52,7 @@ escreve:
 		mov		bx, ax				; Coloca em BX o Handle
     	mov		ah, 40h				; indica que é para escrever
     	
-		lea		dx, buffer			; DX aponta para a infromação a escrever
+		lea		dx, buffer			; DX aponta para a informação a escrever
     	mov		cx, 240				; CX fica com o numero de bytes a escrever
 		int		21h					; Chama a rotina de escrita
 		jnc		close				; Se não existir erro na escrita fecha o ficheiro
