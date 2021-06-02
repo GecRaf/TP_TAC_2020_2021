@@ -20,7 +20,7 @@ dseg	segment para public 'data'
 		STR12	 		DB 		"            "	; String para 12 digitos
 		DDMMAAAA 		db		"                     "
 		
-		Horas			dw		0				; Vai guardar a HORA actual
+		Horas			dw		0				; Vai guardar a HORA actual          opijmç.jn
 		Minutos			dw		0				; Vai guardar os minutos actuais
 		Segundos		dw		0				; Vai guardar os segundos actuais
 		Old_seg			dw		0				; Guarda os �ltimos segundos que foram lidos
