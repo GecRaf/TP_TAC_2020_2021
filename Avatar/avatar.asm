@@ -183,13 +183,12 @@ AVATAR	PROC
 			int		10h			
 			mov		Car, al			; Guarda o Caracter que est� na posi��o do Cursor
 			mov		Cor, ah			; Guarda a cor que est� na posi��o do Cursor	
-	
-
-CICLO:		goto_xy	POSxa,POSya		; Vai para a posi��o anterior do cursor
+					
+CICLO:	
+			goto_xy	POSxa,POSya		; Vai para a posi��o anterior do cursor
 			mov		ah, 02h
 			mov		dl, Car			; Repoe Caracter guardado 
-			int		21H		
-		
+			int		21H
 			goto_xy	POSx,POSy		; Vai para nova possi��o
 			mov 	ah, 08h
 			mov		bh,0			; numero da p�gina
@@ -203,8 +202,9 @@ CICLO:		goto_xy	POSxa,POSya		; Vai para a posi��o anterior do cursor
 			int		21H			
 	
 			goto_xy	POSx,POSy		; Vai para posi��o do cursor
+
 IMPRIME:	mov		ah, 02h
-			mov		dl, 190	; Coloca AVATAR
+			mov		dl, 190			; Coloca AVATAR
 			int		21H	
 			goto_xy	POSx,POSy	; Vai para posi��o do cursor
 		
@@ -222,25 +222,82 @@ LER_SETA:	call 	LE_TECLA
 		
 ESTEND:		cmp 	al,48h
 			jne		BAIXO
-			dec		POSy		;cima
+			dec		POSy		;Cima
+			goto_xy    POSx,POSy      
+            mov     ah, 08h
+            mov     bh,0        
+            int     10h  
+			cmp		al,177
+			je 		INC_Y
 			jmp		CICLO
 
 BAIXO:		cmp		al,50h
 			jne		ESQUERDA
 			inc 	POSy		;Baixo
+			goto_xy    POSx,POSy      
+            mov     ah, 08h
+            mov     bh,0        
+            int     10h  
+			cmp		al,177
+			je 		DEC_Y
 			jmp		CICLO
 
 ESQUERDA:
 			cmp		al,4Bh
 			jne		DIREITA
 			dec		POSx		;Esquerda
+			goto_xy    POSx,POSy      
+            mov     ah, 08h
+            mov     bh,0        
+            int     10h  
+			cmp		al,177
+			je 		INC_X
 			jmp		CICLO
 
 DIREITA:
 			cmp		al,4Dh
-			jne		LER_SETA 
+			jne		LER_SETA
 			inc		POSx		;Direita
+			goto_xy    POSx,POSy      
+            mov     ah, 08h
+            mov     bh,0        
+            int     10h  
+			cmp		al,177
+			je 		DEC_X
 			jmp		CICLO
+
+INC_Y:
+		inc POSy
+        goto_xy	POSx,POSy		; Para o cursor ficar sempre em baixo do avatar
+			mov 	ah, 08h
+			mov		bh,0			
+			int		10h	
+		jmp LER_SETA
+
+INC_X:
+		inc POSx
+        goto_xy	POSx,POSy		; Para o cursor ficar sempre em baixo do avatar
+			mov 	ah, 08h
+			mov		bh,0			
+			int		10h	
+		jmp LER_SETA
+
+DEC_Y:
+		dec POSy
+        goto_xy	POSx,POSy		; Para o cursor ficar sempre em baixo do avatar
+			mov 	ah, 08h
+			mov		bh,0			
+			int		10h	
+		jmp LER_SETA
+
+DEC_X:
+		dec POSx
+        goto_xy	POSx,POSy		; Para o cursor ficar sempre em baixo do avatar
+			mov 	ah, 08h
+			mov		bh,0			
+			int		10h	
+		jmp LER_SETA
+
 
 fim:				
 			RET
