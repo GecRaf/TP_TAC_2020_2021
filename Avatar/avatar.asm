@@ -8,16 +8,47 @@
 ;		arrow keys to move 
 ;		press ESC to exit
 ;
+;------------------------------------------------------------------------
+; MACROS
+;------------------------------------------------------------------------
+;MACRO GOTO_XY
+; COLOCA O CURSOR NA POSIÇÃO POSX,POSY
+;	POSX -> COLUNA
+;	POSY -> LINHA
+; 	REGISTOS USADOS
+;		AH, BH, DL,DH (DX)
+;------------------------------------------------------------------------
+GOTO_XY		MACRO	POSX,POSY
+			MOV	AH,02H
+			MOV	BH,0
+			MOV	DL,POSX
+			MOV	DH,POSY
+			INT	10H
+ENDM
 ;--------------------------------------------------------------
+; MOSTRA - Faz o display de uma string terminada em $
+;---------------------------------------------------------------------------
+MOSTRA MACRO STR 
+MOV AH,09H
+LEA DX,STR 
+INT 21H
+ENDM
+; FIM DAS MACROS
 
 .8086
 .model small
 .stack 2048
 
+PILHA	SEGMENT PARA STACK 'STACK'
+		db 2048 dup(?)
+PILHA	ENDS
+
 dseg	segment para public 'data'
 
 
-		STR12	 		DB 		"            "	; String para 12 digitos
+		STR12	 		db 		"            "	; String para 12 digitos
+		NUMERO			db		"                    $" 	; String destinada a guardar o número lido
+		NUM_SP			db		"                    $" 	; PAra apagar zona de ecran
 		DDMMAAAA 		db		"            "
 		
 		Horas			dw		0				; Vai guardar a HORA actual
@@ -41,7 +72,7 @@ dseg	segment para public 'data'
         Erro_Open       db      'Erro ao tentar abrir o ficheiro$'
         Erro_Ler_Msg    db      'Erro ao tentar ler do ficheiro$'
         Erro_Close      db      'Erro ao tentar fechar o ficheiro$'
-        Fich         	db      'labi2.TXT',0
+        Fich         	db      'labi4.TXT',0
         HandleFich      dw      0
         car_fich        db      ?
 
@@ -52,30 +83,407 @@ dseg	segment para public 'data'
 		POSx			db	3	; POSx pode ir [1..80]	
 		POSya			db	3	; Posi��o anterior de y
 		POSxa			db	3	; Posi��o anterior de x
+		NUMDIG			db	0	; controla o numero de digitos do numero lido
+		MAXDIG			db	4	; Constante que define o numero MAXIMO de digitos a ser aceite
 dseg	ends
 
 cseg	segment para public 'code'
 assume		cs:cseg, ds:dseg
 
+;********************************************************************************
+;********************************************************************************
+; HORAS  - LE Hora DO SISTEMA E COLOCA em tres variaveis (Horas, Minutos, Segundos)
+; CH - Horas, CL - Minutos, DH - Segundos
+;********************************************************************************	
+
+Ler_TEMPO PROC	
+ 
+		PUSH AX
+		PUSH BX
+		PUSH CX
+		PUSH DX
+	
+		PUSHF
+		
+		mov AH, 2CH             ; Buscar a hORAS
+		int 21H                 
+		
+		xor AX,AX
+		mov AL, DH              ; segundos para al
+		mov Segundos, AX		; guarda segundos na variavel correspondente
+		
+		xor AX,AX
+		mov AL, CL              ; Minutos para al
+		mov Minutos, AX         ; guarda MINUTOS na variavel correspondente
+		
+		xor AX,AX
+		mov AL, CH              ; Horas para al
+		mov Horas,AX			; guarda HORAS na variavel correspondente
+ 
+		POPF
+		POP DX
+		POP CX
+		POP BX
+		POP AX
+ 		RET 
+Ler_TEMPO   ENDP 
+
+;********************************************************************************
+;********************************************************************************	
+;-------------------------------------------------------------------
+; HOJE - LE DATA DO SISTEMA E COLOCA NUMA STRING NA FORMA DD/MM/AAAA
+; CX - ANO, DH - MES, DL - DIA
+;-------------------------------------------------------------------
+HOJE PROC	
+
+		PUSH AX
+		PUSH BX
+		PUSH CX
+		PUSH DX
+		PUSH SI
+		PUSHF
+		
+		MOV AH, 2AH             ; Buscar a data
+		INT 21H                 
+		PUSH CX                 ; Ano-> PILHA
+		XOR CX,CX              	; limpa CX
+		MOV CL, DH              ; Mes para CL
+		PUSH CX                 ; Mes-> PILHA
+		MOV CL, DL				; Dia para CL
+		PUSH CX                 ; Dia -> PILHA
+		XOR DH,DH                    
+		XOR	SI,SI
+; DIA ------------------ 
+; DX=DX/AX --- RESTO DX   
+		XOR DX,DX               ; Limpa DX
+		POP AX                  ; Tira dia da pilha
+		MOV CX, 0               ; CX = 0 
+		MOV BX, 10              ; Divisor
+		MOV	CX,2
+DD_DIV:                         
+		DIV BX                  ; Divide por 10
+		PUSH DX                 ; Resto para pilha
+		MOV DX, 0               ; Limpa resto
+		loop dd_div
+		MOV	CX,2
+DD_RESTO:
+		POP DX                  ; Resto da divisao
+		ADD DL, 30h             ; ADD 30h (2) to DL
+		MOV DDMMAAAA[SI],DL
+		INC	SI
+		LOOP DD_RESTO            
+		MOV DL, '/'             ; Separador
+		MOV DDMMAAAA[SI],DL
+		INC SI
+; MES -------------------
+; DX=DX/AX --- RESTO DX
+		MOV DX, 0               ; Limpar DX
+		POP AX                  ; Tira mes da pilha
+		XOR CX,CX               
+		MOV BX, 10				; Divisor
+		MOV CX,2
+MM_DIV:                         
+		DIV BX                  ; Divisao or 10
+		PUSH DX                 ; Resto para pilha
+		MOV DX, 0               ; Limpa resto
+		LOOP MM_DIV
+		MOV CX,2 
+MM_RESTO:
+		POP DX                  ; Resto
+		ADD DL, 30h             ; SOMA 30h
+		MOV DDMMAAAA[SI],DL
+		INC SI		
+		LOOP MM_RESTO
+		
+		MOV DL, '/'             ; Character to display goes in DL
+		MOV DDMMAAAA[SI],DL
+		INC SI
+ 
+;  ANO ----------------------
+		MOV DX, 0               
+		POP AX                  ; mes para AX
+		MOV CX, 0               ; 
+		MOV BX, 10              ; 
+ AA_DIV:                         
+		DIV BX                   
+		PUSH DX                 ; Guarda resto
+		ADD CX, 1               ; Soma 1 contador
+		MOV DX, 0               ; Limpa resto
+		CMP AX, 0               ; Compara quotient com zero
+		JNE AA_DIV              ; Se nao zero
+AA_RESTO:
+		POP DX                  
+		ADD DL, 30h             ; ADD 30h (2) to DL
+		MOV DDMMAAAA[SI],DL
+		INC SI
+		LOOP AA_RESTO
+		POPF
+		POP SI
+		POP DX
+		POP CX
+		POP BX
+		POP AX
+ 		RET 
+HOJE   ENDP 
+
+
+;********************************************************************************
+;********************************************************************************
+;ROTINA PARA APAGAR ECRAN
+
+APAGA_ECRAN	PROC
+		PUSH BX
+		PUSH AX
+		PUSH CX
+		PUSH SI
+		XOR	BX,BX
+		MOV	CX,24*80
+		mov bx,160
+		MOV SI,BX
+APAGA:	
+		MOV	AL,' '
+		MOV	BYTE PTR ES:[BX],AL
+		MOV	BYTE PTR ES:[BX+1],7
+		INC	BX
+		INC BX
+		INC SI
+		LOOP	APAGA
+		POP SI
+		POP CX
+		POP AX
+		POP BX
+		RET
+APAGA_ECRAN	ENDP
+
+;********************************************************************************
+;********************************************************************************
+; LEITURA DE UMA TECLA DO TECLADO 
+; LE UMA TECLA	E DEVOLVE VALOR EM AH E AL
+; SE ah=0 É UMA TECLA NORMAL
+; SE ah=1 É UMA TECLA EXTENDIDA
+; AL DEVOLVE O CÓDIGO DA TECLA PREMIDA
+LE_TECLA	PROC
+sem_tecla:
+		call Trata_Horas
+		MOV	AH,0BH
+		INT 21h
+		cmp AL,0
+		je	sem_tecla
+		
+	
+		
+		MOV	AH,08H
+		INT	21H
+		MOV	AH,0
+		CMP	AL,0
+		JNE	SAI_TECLA
+		MOV	AH, 08H
+		INT	21H
+		MOV	AH,1
+SAI_TECLA:	
+		RET
+LE_TECLA	ENDP
+
+
+
+
+;********************************************************************************
+;********************************************************************************
+; Imprime o tempo e a data no monitor
+
+Trata_Horas PROC
+
+		PUSHF
+		PUSH AX
+		PUSH BX
+		PUSH CX
+		PUSH DX		
+
+		call 	Ler_TEMPO				; Horas MINUTOS e segundos do Sistema
+		
+		mov		AX, Segundos
+		cmp		AX, Old_seg			; VErifica se os segundos mudaram desde a ultima leitura
+		je		fim_horas			; Se a hora não mudou desde a última leitura sai.
+		mov		Old_seg, AX			; Se segundos são diferentes actualiza informação do tempo 
+		
+		mov 	ax,Horas
+		mov		bl, 10     
+		div 	bl
+		add 	al, 30h				; Caracter Correspondente às dezenas
+		add		ah,	30h				; Caracter Correspondente às unidades
+		mov 	STR12[0],al			; 
+		mov 	STR12[1],ah
+		mov 	STR12[2],'h'		
+		mov 	STR12[3],'$'
+		goto_xy 2,0
+		MOSTRA STR12 		
+        
+		mov 	ax,Minutos
+		mov 	bl, 10     
+		div 	bl
+		add 	al, 30h				; Caracter Correspondente às dezenas
+		add		ah,	30h				; Caracter Correspondente às unidades
+		mov 	STR12[0],al			; 
+		mov 	STR12[1],ah
+		mov 	STR12[2],'m'		
+		mov 	STR12[3],'$'
+		goto_xy	6,0
+		MOSTRA	STR12 		
+		
+		mov 	ax,Segundos
+		mov 	bl, 10     
+		div 	bl
+		add 	al, 30h				; Caracter Correspondente às dezenas
+		add		ah,	30h				; Caracter Correspondente às unidades
+		mov 	STR12[0],al			; 
+		mov 	STR12[1],ah
+		mov 	STR12[2],'s'		
+		mov 	STR12[3],'$'
+		goto_xy	10,0
+		MOSTRA	STR12 		
+        
+		;call 	HOJE				; Data de HOJE
+		;mov 	al ,DDMMAAAA[0]	
+		;mov 	STR12[0], al	
+		;mov 	al ,DDMMAAAA[1]	
+		;mov 	STR12[1], al	
+		;mov 	al ,DDMMAAAA[2]	
+		;mov 	STR12[2], al	
+		;mov 	al ,DDMMAAAA[3]	
+		;mov 	STR12[3], al	
+		;mov 	al ,DDMMAAAA[4]	
+		;mov 	STR12[4], al	
+		;mov 	al ,DDMMAAAA[5]	
+		;mov 	STR12[5], al	
+		;mov 	al ,DDMMAAAA[6]	
+		;mov 	STR12[6], al	
+		;mov 	al ,DDMMAAAA[7]	
+		;mov 	STR12[7], al	
+		;mov 	al ,DDMMAAAA[8]	
+		;mov 	STR12[8], al
+		;mov 	al ,DDMMAAAA[9]	
+		;mov 	STR12[9], al		
+		;mov 	STR12[10],'$'
+		goto_xy	57,0
+		MOSTRA	STR12 	
+		
+						
+fim_horas:		
+		goto_xy	POSx,POSy			; Volta a colocar o cursor onde estava antes de actualizar as horas
+		
+		POPF
+		POP DX		
+		POP CX
+		POP BX
+		POP AX
+		RET		
+			
+Trata_Horas ENDP
 
 
 ;########################################################################
-goto_xy	macro		POSx,POSy
-		mov		ah,02h
-		mov		bh,0		; numero da p�gina
-		mov		dl,POSx
-		mov		dh,POSy
-		int		10h
-endm
+
+teclanum  proc
+		mov	ax, dseg
+		mov	ds,ax
+		mov	ax,0B800h
+		mov	es,ax		; es é ponteiro para mem video
+
+NOVON:	
+		mov		NUMDIG, 0			; inícia leitura de novo número
+		mov		cx, 20
+		xor		BX,BX
+LIMPA_N: 	
+		mov		NUMERO[bx], ' '	
+		inc		bx
+		loop 	LIMPA_N
+		
+		mov		al, 20
+		mov		POSx,al
+		mov		al, 10
+		mov		POSy,al				; (POSx,POSy) é posição do cursor
+		goto_xy	POSx,POSy
+		MOSTRA	NUM_SP	
+
+CICLO:	goto_xy	POSx,POSy
+	
+
+		call 	LE_TECLA		; lê uma nova tecla
+		cmp		ah,1			; verifica se é tecla extendida
+		je		ESTEND
+		cmp 	AL,27			; caso seja tecla ESCAPE sai do programa
+		je		FIM
+		cmp 	AL,13			; Pressionando ENTER vai para OKNUM
+		je		OKNUM		
+		cmp 	AL,8			; Teste BACK SPACE <- (apagar digito)
+		jne		NOBACK
+		mov		bl,NUMDIG		; Se Pressionou BACK SPACE 
+		cmp		bl,0			; Verifica se não tem digitos no numero
+		je		NOBACK			; se não tem digitos continua então não apaga e salta para NOBACK
+
+		dec		NUMDIG			; Retira um digito (BACK SPACE)
+		dec		POSx			; Retira um digito	
+
+		xor		bx,bx
+		mov		bl, NUMDIG
+		mov		NUMERO[bx],' '	; Retira um digito		
+		goto_xy	POSx,POSy
+		mov		ah,02h			; imprime SPACE na possicão do cursor
+		mov		dl,32			; que equivale a colocar SPACE 
+		int		21H
+
+NOBACK:	
+		cmp		AL,30h			; se for menor que tecla do ZERO
+		jb		CICLO
+		cmp		AL,39h			; ou se for maior que tecla do NOVE 
+		ja		CICLO			; é rejeitado e vai buscar nova tecla 
+		
+		mov		bl,MAXDIG		; se atigido numero máximo de digitos ?	
+		cmp		bl,NUMDIG	
+		jbe		CICLO			; não aceita mais digitos
+		xor		Bx, Bx			; caso contrario coloca digito na matriz NUMERO
+		mov		bl, NUMDIG
+		mov		NUMERO[bx], al		
+		mov		ah,02h			; imprime digito 
+		mov		dl,al			; na possicão do cursor
+		int		21H
+
+		inc		POSx			; avança o cursor e
+		inc		NUMDIG			; incrementa o numero de digitos
+
+ESTEND:	jmp	CICLO			; Tecla extendida não é tratada neste programa 
+
+OKNUM:	goto_xy	20,16
+		MOSTRA	NUM_SP			
+		goto_xy	20,16		
+		xor		bx,bx
+		mov		bl, NUMDIG
+		inc 	bl
+		mov		NUMERO[bx], '$'			
+		MOSTRA	NUMERO 
+		jmp		NOVON		; Vai ler novo numero
+
+fim:	ret
+
+teclanum ENDP
+
+;########################################################################
+;goto_xy	macro		POSx,POSy
+;		mov		ah,02h
+;		mov		bh,0		; numero da p�gina
+;		mov		dl,POSx
+;		mov		dh,POSy
+;		int		10h
+;endm
 
 ;########################################################################
 ; MOSTRA - Faz o display de uma string terminada em $
 
-MOSTRA MACRO STR 
-MOV AH,09H
-LEA DX,STR 
-INT 21H
-ENDM
+;MOSTRA MACRO STR 
+;	mov AH,09H
+;	lea DX,STR 
+;	int 21H
+;ENDM
 
 ; FIM DAS MACROS
 
@@ -83,19 +491,19 @@ ENDM
 
 ;ROTINA PARA APAGAR ECRAN
 
-apaga_ecran	proc
-			mov		ax,0B800h
-			mov		es,ax
-			xor		bx,bx
-			mov		cx,25*80
-		
-apaga:		mov		byte ptr es:[bx],' '
-			mov		byte ptr es:[bx+1],7
-			inc		bx
-			inc 	bx
-			loop	apaga
-			ret
-apaga_ecran	endp
+;apaga_ecran	proc
+;			mov		ax,0B800h
+;			mov		es,ax
+;			xor		bx,bx
+;			mov		cx,25*80
+;		
+;apaga:		mov		byte ptr es:[bx],' '
+;			mov		byte ptr es:[bx+1],7
+;			inc		bx
+;			inc 	bx
+;			loop	apaga
+;			ret
+;apaga_ecran	endp
 
 
 ;########################################################################
@@ -155,18 +563,18 @@ IMP_FICH	endp
 ;########################################################################
 ; LE UMA TECLA	
 
-LE_TECLA	PROC
+;LE_TECLA	PROC
 		
-		mov		ah,08h
-		int		21h
-		mov		ah,0
-		cmp		al,0
-		jne		SAI_TECLA
-		mov		ah, 08h
-		int		21h
-		mov		ah,1
-SAI_TECLA:	RET
-LE_TECLA	endp
+;		mov		ah,08h
+;		int		21h
+;		mov		ah,0
+;		cmp		al,0
+;		jne		SAI_TECLA
+;		mov		ah, 08h
+;		int		21h
+;		mov		ah,1
+;SAI_TECLA:	RET
+;LE_TECLA	endp
 
 
 
@@ -182,7 +590,13 @@ AVATAR	PROC
 			mov		bh,0			; numero da p�gina
 			int		10h			
 			mov		Car, al			; Guarda o Caracter que est� na posi��o do Cursor
-			mov		Cor, ah			; Guarda a cor que est� na posi��o do Cursor	
+			mov		Cor, ah			; Guarda a cor que est� na posi��o do Cursor
+
+			goto_xy 9,20
+			MOSTRA	String_nome	
+
+			goto_xy 9,21
+			MOSTRA	Construir_nome	
 					
 CICLO:	
 			goto_xy	POSxa,POSya		; Vai para a posi��o anterior do cursor
@@ -196,11 +610,14 @@ CICLO:
 			mov		Car, al			; Guarda o Caracter que est� na posi��o do Cursor
 			mov		Cor, ah			; Guarda a cor que est� na posi��o do Cursor
 		
-			goto_xy	78,0			; Mostra o caractr que estava na posi��o do AVATAR
-			mov		ah, 02h			; IMPRIME caracter da posi��o no canto
-			mov		dl, Car	
-			int		21H			
-	
+			goto_xy	78,0							
+			mov		ah, 02h			; Mostra o caractr que estava na posi��o do AVATAR
+			mov		dl, Car			; IMPRIME caracter da posi��o no canto
+			int		21H
+
+			goto_xy 57,0
+			MOSTRA	String_TJ
+
 			goto_xy	POSx,POSy		; Vai para posi��o do cursor
 
 IMPRIME:	mov		ah, 02h
@@ -313,6 +730,7 @@ Main  proc
 		mov			es,ax
 		
 		call		apaga_ecran
+		;call		teclanum  ; escolha de opção no menu
 		goto_xy		0,0
 		call		IMP_FICH
 		call 		AVATAR
@@ -323,6 +741,4 @@ Main  proc
 Main	endp
 Cseg	ends
 end	Main
-
-
 		
