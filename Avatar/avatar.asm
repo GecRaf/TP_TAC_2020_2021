@@ -62,12 +62,12 @@ dseg	segment para public 'data'
 
 		String_num 		db 		"  0 $"
         String_nome  	db	    "ISEC $"	
-		Construir_nome	db	    "    $"	
+		Construir_nome	db	    "     $"
 		Dim_nome		dw		5	; Comprimento do Nome
 		indice_nome		dw		0	; indice que aponta para Construir_nome
 		
-		Fim_Ganhou		db	    " Ganhou $"	
-		Fim_Perdeu		db	    " Perdeu $"	
+		Fim_Ganhou		db	    " Ganhou! $"	
+		Fim_Perdeu		db	    " Perdeu! $"	
 
         Erro_Open       db      'Erro ao tentar abrir o ficheiro$'
         Erro_Ler_Msg    db      'Erro ao tentar ler do ficheiro$'
@@ -566,53 +566,10 @@ IMP_FICH	endp
 
 IMP_MENU	PROC
 
-		;abre ficheiro
-        mov     ah,3dh
-        mov     al,0
-        lea     dx,Menu
-        int     21h
-        jc      erro_abrir
-        mov     HandleMenu,ax
-        jmp     ler_ciclo
 
-erro_abrir:
-        mov     ah,09h
-        lea     dx,Erro_Open
-        int     21h
-        jmp     sai_f
-
-ler_ciclo:
-        mov     ah,3fh
-        mov     bx,HandleMenu
-        mov     cx,1
-        lea     dx,car_Menu
-        int     21h
-		jc		erro_ler
-		cmp		ax,0		;EOF?
-		je		fecha_ficheiro
-        mov     ah,02h
-		mov		dl,car_Menu
-		int		21h
-		jmp		ler_ciclo
-
-erro_ler:
-        mov     ah,09h
-        lea     dx,Erro_Ler_Msg
-        int     21h
-
-fecha_ficheiro:
-        mov     ah,3eh
-        mov     bx,HandleMenu
-        int     21h
-        jnc     sai_f
-
-        mov     ah,09h
-        lea     dx,Erro_Close
-        Int     21h
-sai_f:	
-		ret
 		
 IMP_MENU	endp		
+
 
 
 ;########################################################################
@@ -649,6 +606,8 @@ AVATAR	PROC
 
 			goto_xy 9,20
 			MOSTRA	String_nome	
+			goto_xy 9,21
+			MOSTRA	Construir_nome
 					
 CICLO:	
 			goto_xy	POSxa,POSya		; Vai para a posi��o anterior do cursor
@@ -667,8 +626,7 @@ CICLO:
 			mov		dl, Car			; IMPRIME caracter da posi��o no canto
 			int		21H
 
-			goto_xy 9,21
-			MOSTRA	Construir_nome
+			
 
 			goto_xy 57,0
 			MOSTRA	String_TJ
@@ -679,12 +637,23 @@ CICLO:
 			mov  	al, String_nome[si]
 			mov		Construir_nome[si], al
 			inc 	si
-			mov		al, String_nome		; Não sei explicar porque só funciona assim
-			cmp		Construir_nome, al	; mas sem isto buga
-
+			xor 	di,di
+			repete:
+			mov		al, String_nome[di]
+			cmp     al, '$'
+			je     	GANHOU ;acertou
+			cmp		Construir_nome[di], al
+			goto_xy 9,21
+			MOSTRA	Construir_nome
+			goto_xy	POSx,POSy
+			jne 	IMPRIME ;diferentes
+			inc 	di
+			jmp     repete
 			;goto_xy	POSx,POSy		; Vai para posi��o do cursor
+			
 
-IMPRIME:	mov		ah, 02h
+IMPRIME:	
+			mov		ah, 02h
 			mov		dl, 190			; Coloca AVATAR
 			int		21H	
 			goto_xy	POSx,POSy	; Vai para posi��o do cursor
@@ -779,6 +748,18 @@ DEC_X:
 			int		10h	
 			jmp 	LER_SETA
 
+GANHOU:
+			;call apaga_ecran
+			goto_xy 25, 21
+			MOSTRA Fim_Ganhou
+			jmp fim
+			;jmp fim
+
+PERDEU:
+			;call apaga_ecran
+			mov dl, Fim_Perdeu
+			;jmp fim
+
 fim:				
 			ret
 AVATAR		endp
@@ -795,6 +776,8 @@ Main  proc
 		
 		call		apaga_ecran
 		goto_xy		0,0
+		;call		IMP_MENU
+		;call		apaga_ecran
 		call		IMP_FICH
 		call 		AVATAR
 		goto_xy		0,22
