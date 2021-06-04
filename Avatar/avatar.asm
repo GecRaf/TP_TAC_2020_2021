@@ -781,17 +781,18 @@ VERIFICA_LETRAS:
 			mov		Construir_nome[si], al
 			inc 	si
 			mov		al, String_nome
-			cmp		al, Construir_nome
+			cmp		Construir_nome, al
+			je 		fim
 			int 	10H
-			je 		GANHOU
-			int 	21H
 
 GANHOU:
 			mov		dl, Fim_Ganhou
+			;call	apaga_ecran
 			jmp		fim
 
 PERDEU:
 			mov		dl, Fim_Perdeu
+			;call	apaga_ecran
 			jmp 	fim
 fim:				
 			ret
