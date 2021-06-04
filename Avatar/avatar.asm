@@ -674,9 +674,15 @@ CICLO:
 			MOSTRA	String_TJ
 
 			goto_xy	POSx,POSy
-			call VERIFICA_LETRAS
+			cmp		al, String_nome[si]
+			jne		IMPRIME
+			mov  	al, String_nome[si]
+			mov		Construir_nome[si], al
+			inc 	si
+			mov		al, String_nome		; Não sei explicar porque só funciona assim
+			cmp		Construir_nome, al	; mas sem isto buga
 
-			goto_xy	POSx,POSy		; Vai para posi��o do cursor
+			;goto_xy	POSx,POSy		; Vai para posi��o do cursor
 
 IMPRIME:	mov		ah, 02h
 			mov		dl, 190			; Coloca AVATAR
@@ -773,27 +779,6 @@ DEC_X:
 			int		10h	
 			jmp 	LER_SETA
 
-VERIFICA_LETRAS:
-			goto_xy	POSx,POSy
-			cmp		al, String_nome[si]
-			jne		IMPRIME
-			mov		al, String_nome[si]
-			mov		Construir_nome[si], al
-			inc 	si
-			mov		al, String_nome
-			cmp		Construir_nome, al
-			je 		fim
-			int 	10H
-
-GANHOU:
-			mov		dl, Fim_Ganhou
-			;call	apaga_ecran
-			jmp		fim
-
-PERDEU:
-			mov		dl, Fim_Perdeu
-			;call	apaga_ecran
-			jmp 	fim
 fim:				
 			ret
 AVATAR		endp
@@ -809,8 +794,6 @@ Main  proc
 		mov			es,ax
 		
 		call		apaga_ecran
-		;call		IMP_MENU
-		;call		teclanum  ; escolha de opção no menu
 		goto_xy		0,0
 		call		IMP_FICH
 		call 		AVATAR
