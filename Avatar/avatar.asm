@@ -76,7 +76,8 @@ dseg	segment para public 'data'
         Erro_Ler_Msg    db      'Erro ao tentar ler do ficheiro$'
         Erro_Close      db      'Erro ao tentar fechar o ficheiro$'
         Fich         	db      'labi.TXT',0
-		Menu 			DB		'menu.TXT',0
+		Menu 			DB		'menu2.TXT',0
+		About   		db      "I am some text about the program!$" ; Teste ao menu, remover mais tarde
         HandleFich      dw      0
         car_fich        db      ?
 		HandleMenu      dw      0
@@ -508,6 +509,93 @@ teclanum ENDP
 ;			ret
 ;apaga_ecran	endp
 
+;########################################################################
+; IMP_MENU
+
+IMP_MENU	PROC
+ShowMenu:
+		;abre ficheiro
+        mov     ah,3dh
+        mov     al,0
+        lea     dx,Menu
+        int     21h
+        jc      erro_abrir
+        mov     HandleFich,ax
+        jmp     ler_ciclo
+
+erro_abrir:
+        mov     ah,09h
+        lea     dx,Erro_Open
+        int     21h
+        jmp     sai_f
+
+ler_ciclo:
+        mov     ah,3fh
+        mov     bx,HandleFich
+        mov     cx,1
+        lea     dx,car_fich
+        int     21h
+		jc		erro_ler
+		cmp		ax,0		;EOF?
+		je		fecha_ficheiro
+        mov     ah,02h
+		mov		dl,car_fich
+		int		21h
+		jmp		ler_ciclo
+
+erro_ler:
+        mov     ah,09h
+        lea     dx,Erro_Ler_Msg
+        int     21h
+
+fecha_ficheiro:
+        mov     ah,3eh
+        mov     bx,HandleFich
+        int     21h
+        jnc     sai_f
+
+        mov     ah,09h
+        lea     dx,Erro_Close
+        Int     21h
+sai_f:	
+		jmp getnum
+
+getnum:        
+    mov     ah, 1 
+    int     21h        
+    
+    cmp     al, '1' 
+    jl      ShowMenu   
+    cmp     al, '3'
+    jg      ShowMenu 
+        
+    cmp     al, "1"
+    je      Jogo
+    cmp     al, "2"
+    je      ShowAbout
+    cmp     al, "3"
+    jmp     Quit
+;    cmp     al, "4"
+;    jmp     CodeForMenu4
+;    etc...
+        
+Quit: 
+   mov   ah,4ch
+   int   21h   
+
+Showabout:       
+    lea     dx, About  
+    mov     ah, 09h 
+    int     21h    
+    jmp     ShowMenu
+    
+Jogo:
+	call	apaga_ecran
+
+fim: 
+			ret
+		
+IMP_MENU	endp
 
 ;########################################################################
 ; IMP_FICH
@@ -561,17 +649,6 @@ sai_f:
 		RET
 		
 IMP_FICH	endp		
-
-;########################################################################
-; IMP_MENU
-
-IMP_MENU	PROC
-
-
-		
-IMP_MENU	endp		
-
-
 
 ;########################################################################
 ; LE UMA TECLA	
@@ -663,12 +740,14 @@ IMPRIME:
 			mov		POSxa, al
 			mov		al, POSy	; Guarda a posi��o do cursor
 			mov 	POSya, al
+
+
 		
 LER_SETA:	call 	LE_TECLA
 			cmp		ah, 1
 			je		ESTEND
 			cmp 	al, 27	; ESCAPE
-			je		fim
+			je		Main
 			jmp		LER_SETA
 		
 ESTEND:		cmp 	al,48h
@@ -766,6 +845,13 @@ fim:
 AVATAR		endp
 
 ;########################################################################
+; Mostra menu após dar ESCAPE
+;########################################################################
+MOSTRA_MENU PROC
+			call 	apaga_ecran
+			jmp		IMP_MENU
+MOSTRA_MENU endp
+;########################################################################
 Main  proc
 		mov			ax, dseg
 		mov			ds,ax
@@ -776,9 +862,8 @@ Main  proc
 		mov			es,ax
 		
 		call		apaga_ecran
+		call		IMP_MENU
 		goto_xy		0,0
-		;call		IMP_MENU
-		;call		apaga_ecran
 		call		IMP_FICH
 		call 		AVATAR
 		goto_xy		0,22
