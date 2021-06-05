@@ -54,11 +54,14 @@ dseg	segment para public 'data'
 		Horas			dw		0				; Vai guardar a HORA actual
 		Minutos			dw		0				; Vai guardar os minutos actuais
 		Segundos		dw		0				; Vai guardar os segundos actuais
+		Segundos_jogo	dw		0				; Vai guardar os segundos de jogo
+		centenas		dw		0				; Centenas de segundos
 		Old_seg			dw		0				; Guarda os �ltimos segundos que foram lidos
 		Tempo_init		dw		0				; Guarda O Tempo de inicio do jogo
 		Tempo_j			dw		0				; Guarda O Tempo que decorre o  jogo
 		Tempo_limite	dw		100				; tempo m�ximo de Jogo
-		String_TJ		db		"    /100$"
+		String_TJmax	db		"    /100$"
+		Str_tempoJogo	db		"            "  ; stirng para tempo de jogo decorrido
 
 		String_num 		db 		"  0 $"
         String_nome  	db	    "ISEC $"	
@@ -305,7 +308,7 @@ Trata_Horas PROC
 		call 	Ler_TEMPO				; Horas MINUTOS e segundos do Sistema
 		
 		mov		AX, Segundos
-		cmp		AX, Old_seg			; VErifica se os segundos mudaram desde a ultima leitura
+		cmp		AX, Old_seg			; Verifica se os segundos mudaram desde a ultima leitura
 		je		fim_horas			; Se a hora não mudou desde a última leitura sai.
 		mov		Old_seg, AX			; Se segundos são diferentes actualiza informação do tempo 
 		
@@ -345,30 +348,28 @@ Trata_Horas PROC
 		goto_xy	10,0
 		MOSTRA	STR12 		
         
-		;call 	HOJE				; Data de HOJE
-		;mov 	al ,DDMMAAAA[0]	
-		;mov 	STR12[0], al	
-		;mov 	al ,DDMMAAAA[1]	
-		;mov 	STR12[1], al	
-		;mov 	al ,DDMMAAAA[2]	
-		;mov 	STR12[2], al	
-		;mov 	al ,DDMMAAAA[3]	
-		;mov 	STR12[3], al	
-		;mov 	al ,DDMMAAAA[4]	
-		;mov 	STR12[4], al	
-		;mov 	al ,DDMMAAAA[5]	
-		;mov 	STR12[5], al	
-		;mov 	al ,DDMMAAAA[6]	
-		;mov 	STR12[6], al	
-		;mov 	al ,DDMMAAAA[7]	
-		;mov 	STR12[7], al	
-		;mov 	al ,DDMMAAAA[8]	
-		;mov 	STR12[8], al
-		;mov 	al ,DDMMAAAA[9]	
-		;mov 	STR12[9], al		
-		;mov 	STR12[10],'$'
+		inc 	Segundos_jogo
+		cmp		Segundos_jogo, 99
+		jae		centenas
+		mov		ax, Segundos_jogo 	
+		mov		STR12[0], al
+		mov		STR12[1], ah
+		mov 	STR12[2],'s'		
+		mov 	STR12[3],'$'
+
 		goto_xy	57,0
-		MOSTRA	STR12 	
+		MOSTRA	STR12
+
+		mul		
+
+	centenas:
+		inc		centenas
+		mov		dx, centenas
+		mov		STR12[0], dx
+		mov		STR12[1], 0
+		mov 	STR12[2], 0		
+		mov 	STR12[3],'s'
+		mov 	STR12[3],'$' 	
 		
 						
 fim_horas:		
