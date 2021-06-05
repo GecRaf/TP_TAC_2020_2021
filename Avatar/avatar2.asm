@@ -354,6 +354,9 @@ Trata_Horas PROC
 
 		inc 	Segundos_jogo
 		cmp		Segundos_jogo, 100
+		;MOSTRA 	STR12 ; Arranja maneira de mostrar os 100 segundos. Ele chega ao 99 e salta
+						; como ele depois não mostra mais a string não dá print ao nr 100
+						; ve se da para resolver
 		jae		PERDEU
 		mov		ax, Segundos_jogo
 		mov 	bl, 10     
@@ -397,8 +400,8 @@ PERDEU:
 			MOSTRA Fim_Perdeu
 			jmp fim
 
-fim:
-		ret
+fim: 
+		ret ; Não é bem assim que quero acabar, tenho de ver uma maneira melhor
 
 Trata_Horas ENDP
 
