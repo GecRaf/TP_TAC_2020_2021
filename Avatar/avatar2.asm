@@ -55,13 +55,11 @@ dseg	segment para public 'data'
 		Minutos			dw		0				; Vai guardar os minutos actuais
 		Segundos		dw		0				; Vai guardar os segundos actuais
 		Segundos_jogo	dw		0				; Vai guardar os segundos de jogo
-		centenas		dw		0				; Centenas de segundos
 		Old_seg			dw		0				; Guarda os �ltimos segundos que foram lidos
 		Tempo_init		dw		0				; Guarda O Tempo de inicio do jogo
 		Tempo_j			dw		0				; Guarda O Tempo que decorre o  jogo
 		Tempo_limite	dw		100				; tempo m�ximo de Jogo
 		String_TJmax	db		"    /100$"
-		Str_tempoJogo	db		"            "  ; stirng para tempo de jogo decorrido
 
 		String_num 		db 		"  0 $"
         String_nome1  	db	    "TAC $"
@@ -375,30 +373,20 @@ Trata_Horas PROC
 		div 	bl
 		add 	al, 30h				; Caracter Correspondente às dezenas
 		add		ah,	30h				; Caracter Correspondente às unidades
-		mov		STR12[0], al
-		mov		STR12[1], ah
-		mov 	STR12[2],'s'		
-		mov 	STR12[3],'$'
+		mov		STR12[0], '0'
+		mov		STR12[1], al
+		mov		STR12[2], ah
+		mov 	STR12[3],'s'		
+		mov 	STR12[4],'$'
+
+
+
 
 		MOSTRA	STR12
-		cmp		Segundos_jogo, 100
-		;MOSTRA 	STR12 ; Arranja maneira de mostrar os 100 segundos. Ele chega ao 99 e salta
-						; como ele depois não mostra mais a string não dá print ao nr 100
-						; ve se da para resolver
+		cmp		Segundos_jogo, 110
 		je		PERDEU
 
-		;mul		
 
-	;centenas_f:
-	;	inc		centenas
-	;	mov		ax, centenas
-	;	mov		STR12[0], al
-	;	mov		STR12[1], 0
-	;	mov 	STR12[2], 0		
-	;	mov 	STR12[3],'s'
-	;	mov 	STR12[3],'$'
-	;	goto_xy	57,0
-	;	MOSTRA	STR12 	
 	
 	
 	
