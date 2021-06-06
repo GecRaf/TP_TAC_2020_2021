@@ -64,9 +64,21 @@ dseg	segment para public 'data'
 		Str_tempoJogo	db		"            "  ; stirng para tempo de jogo decorrido
 
 		String_num 		db 		"  0 $"
-        String_nome  	db	    "ISEC $"	
-		Construir_nome	db	    "     $"
-		Dim_nome		dw		5	; Comprimento do Nome
+        String_nome1  	db	    "TAC $"
+		String_nome2  	db	    "ISEC $"
+		String_nome3  	db	    "COIMBRA $"
+		String_nome4  	db	    "ASSEMBLY $"	
+		String_nome5  	db	    "COMPUTADORES $"
+		Construir_nome1	db	    "    $"
+		Construir_nome2	db	    "     $"
+		Construir_nome3	db	    "        $"
+		Construir_nome4	db	    "         $"
+		Construir_nome5	db	    "             $"
+		Dim_nome1		dw		4	; Comprimento do Nome
+		Dim_nome2		dw		5
+		Dim_nome3		dw		8
+		Dim_nome4		dw		9
+		Dim_nome5		dw		13
 		indice_nome		dw		0	; indice que aponta para Construir_nome
 		
 		Fim_Ganhou		db	    " Ganhou! $"	
@@ -75,8 +87,13 @@ dseg	segment para public 'data'
         Erro_Open       db      'Erro ao tentar abrir o ficheiro$'
         Erro_Ler_Msg    db      'Erro ao tentar ler do ficheiro$'
         Erro_Close      db      'Erro ao tentar fechar o ficheiro$'
-        Fich         	db      'labi.TXT',0
+        Fich         	db      'labi5.TXT',0
+		Fich2         	db      'labi2.TXT',0
+		Fich3         	db      'labi3.TXT',0
+		Fich4         	db      'labi4.TXT',0
+		Fich5         	db      'labi5.TXT',0
 		Menu 			DB		'menu2.TXT',0
+		MenuNiveis 		DB		'menuNiveis.TXT',0
 		About   		db      "I am some text about the program!$" ; Teste ao menu, remover mais tarde
         HandleFich      dw      0
         car_fich        db      ?
@@ -353,11 +370,6 @@ Trata_Horas PROC
 		
 
 		inc 	Segundos_jogo
-		cmp		Segundos_jogo, 100
-		;MOSTRA 	STR12 ; Arranja maneira de mostrar os 100 segundos. Ele chega ao 99 e salta
-						; como ele depois não mostra mais a string não dá print ao nr 100
-						; ve se da para resolver
-		jae		PERDEU
 		mov		ax, Segundos_jogo
 		mov 	bl, 10     
 		div 	bl
@@ -369,6 +381,11 @@ Trata_Horas PROC
 		mov 	STR12[3],'$'
 
 		MOSTRA	STR12
+		cmp		Segundos_jogo, 100
+		;MOSTRA 	STR12 ; Arranja maneira de mostrar os 100 segundos. Ele chega ao 99 e salta
+						; como ele depois não mostra mais a string não dá print ao nr 100
+						; ve se da para resolver
+		je		PERDEU
 
 		;mul		
 
@@ -398,10 +415,12 @@ fim_horas:
 PERDEU:
 			goto_xy 25, 21
 			MOSTRA Fim_Perdeu
+			mov	Segundos_jogo, 0
 			jmp fim
 
 fim: 
-		ret ; Não é bem assim que quero acabar, tenho de ver uma maneira melhor
+		mov		ah, 4ch ; Não é bem assim que quero acabar, tenho de ver uma maneira melhor
+		int		21h
 
 Trata_Horas ENDP
 
@@ -703,9 +722,9 @@ AVATAR	PROC
 			mov		Cor, ah			; Guarda a cor que est� na posi��o do Cursor
 
 			goto_xy 9,20
-			MOSTRA	String_nome	
+			MOSTRA	String_nome1	
 			goto_xy 9,21
-			MOSTRA	Construir_nome
+			MOSTRA	Construir_nome1
 					
 CICLO:	
 			goto_xy	POSxa,POSya		; Vai para a posi��o anterior do cursor
@@ -730,19 +749,19 @@ CICLO:
 			MOSTRA	String_TJmax
 
 			goto_xy	POSx,POSy
-			cmp		al, String_nome[si]
+			cmp		al, String_nome1[si]
 			jne		IMPRIME
-			mov  	al, String_nome[si]
-			mov		Construir_nome[si], al
+			mov  	al, String_nome1[si]
+			mov		Construir_nome1[si], al
 			inc 	si
 			xor 	di,di
 			repete:
-			mov		al, String_nome[di]
+			mov		al, String_nome1[di]
 			cmp     al, '$'
 			je     	GANHOU ;acertou
-			cmp		Construir_nome[di], al
+			cmp		Construir_nome1[di], al
 			goto_xy 9,21
-			MOSTRA	Construir_nome
+			MOSTRA	Construir_nome1
 			goto_xy	POSx,POSy
 			jne 	IMPRIME ;diferentes
 			inc 	di
