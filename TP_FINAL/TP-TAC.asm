@@ -1,12 +1,12 @@
 ;------------------------------------------------------------------------
-;	Base para TRABALHO PRATICO - TECNOLOGIAS e ARQUITECTURAS de COMPUTADORES
+;	TRABALHO PRATICO - TECNOLOGIAS e ARQUITECTURAS de COMPUTADORES
 ;   
 ;	ANO LECTIVO 2020/2021
 ;--------------------------------------------------------------
-; Demostra��o da navega��o do Ecran com um avatar
+; 	Realizado por:
 ;
-;		arrow keys to move 
-;		press ESC to exit
+;	Rafael Couto		2019142454	a2019142454@isec.pt
+;	Rodrigo Ferreira	2019138331	a2019138331@isec.pt
 ;
 ;------------------------------------------------------------------------
 ; MACROS
@@ -33,7 +33,9 @@ MOV AH,09H
 LEA DX,STR 
 INT 21H
 ENDM
+;---------------------------------------------------------------------------
 ; FIM DAS MACROS
+;---------------------------------------------------------------------------
 
 .8086
 .model small
@@ -48,59 +50,51 @@ dseg	segment para public 'data'
 
 		STR12	 		db 		"            "	; String para 12 digitos
 		NUMERO			db		"                    $" 	; String destinada a guardar o número lido
-		NUM_SP			db		"                    $" 	; PAra apagar zona de ecran
-		DDMMAAAA 		db		"            "
+		NUM_SP			db		"                    $" 	; Para apagar zona de ecran
 		
 		Horas			dw		0				; Vai guardar a HORA actual
 		Minutos			dw		0				; Vai guardar os minutos actuais
 		Segundos		dw		0				; Vai guardar os segundos actuais
-		Segundos_jogo	dw		0				; Vai guardar os segundos de jogo
+		Segundos_jogo	dw		95				; Vai guardar os segundos de jogo
 		Old_seg			dw		0				; Guarda os �ltimos segundos que foram lidos
 		Tempo_init		dw		0				; Guarda O Tempo de inicio do jogo
 		Tempo_j			dw		0				; Guarda O Tempo que decorre o  jogo
-		Tempo_limite	dw		100				; tempo m�ximo de Jogo
+		Tempo_limite	dw		100				; Tempo m�ximo de Jogo
 		String_TJmax	db		"    /100$"
+		Str_tempoJogo	db		"            "  ; String para tempo de jogo decorrido
 		String_tempo	db		"   s $"
+		EstadoJogo		db		0				; Guarda o estado do jogo
 
 		String_num 		db 		"  0 $"
+		String_nome		db		20 dup(' '),'$'
         String_nome1  	db	    "TAC $"
 		String_nome2  	db	    "ISEC $"
 		String_nome3  	db	    "COIMBRA $"
 		String_nome4  	db	    "ASSEMBLY $"	
 		String_nome5  	db	    "COMPUTADORES $"
-		Construir_nome1	db	    "    $"
-		Construir_nome2	db	    "     $"
-		Construir_nome3	db	    "        $"
-		Construir_nome4	db	    "         $"
-		Construir_nome5	db	    "             $"
-
-		Dim_nome1		dw		4	; Comprimento do Nome
-		Dim_nome2		dw		5
-		Dim_nome3		dw		8
-		Dim_nome4		dw		9
-		Dim_nome5		dw		13
+		Construir_nome	db	    20 dup(' '),"$"
 		indice_nome		dw		0	; indice que aponta para Construir_nome
 		
 		Fim_Ganhou		db	    " Ganhou! $"	
-		Fim_Perdeu		db	    " Perdeu! $"	
+		Fim_Perdeu		db	    " Perdeu! $"
+		Voltar_Menu		db		" Para voltar ao menu pressione a tecla Space... $"	
 
         Erro_Open       db      'Erro ao tentar abrir o ficheiro$'
         Erro_Ler_Msg    db      'Erro ao tentar ler do ficheiro$'
         Erro_Close      db      'Erro ao tentar fechar o ficheiro$'
-        Fich         	db      'labi5.TXT',0
-		Fich2         	db      'labi2.TXT',0
-		Fich3         	db      'labi3.TXT',0
-		Fich4         	db      'labi4.TXT',0
-		Fich5         	db      'labi5.TXT',0
-		Menu 			DB		'menu2.TXT',0
-		MenuNiveis 		DB		'menuNiveis.TXT',0
-		About   		db      "I am some text about the program!$" ; Teste ao menu, remover mais tarde
+        Fich         	db      'labi1.TXT',0
+		Menu 			DB		'Menu.TXT',0
+		Niveis 			DB		'Menu2.TXT',0
+		Top10   		db      'top10.TXT',0
         HandleFich      dw      0
         car_fich        db      ?
 		HandleMenu      dw      0
 		car_Menu        db      ?
+		HandleNiveis    dw      0
+		car_Niveis      db      ?
+		HandleTOP10    	dw      0
+		car_TOP10      	db      ?
 
-		string			db	"Teste pr�tico de T.I",0
 		Car				db	32	; Guarda um caracter do Ecran 
 		Cor				db	7	; Guarda os atributos de cor do caracter
 		POSy			db	3	; a linha pode ir de [1 .. 25]
@@ -153,106 +147,6 @@ Ler_TEMPO PROC
 Ler_TEMPO   ENDP 
 
 ;********************************************************************************
-;********************************************************************************	
-;-------------------------------------------------------------------
-; HOJE - LE DATA DO SISTEMA E COLOCA NUMA STRING NA FORMA DD/MM/AAAA
-; CX - ANO, DH - MES, DL - DIA
-;-------------------------------------------------------------------
-HOJE PROC	
-
-		PUSH AX
-		PUSH BX
-		PUSH CX
-		PUSH DX
-		PUSH SI
-		PUSHF
-		
-		MOV AH, 2AH             ; Buscar a data
-		INT 21H                 
-		PUSH CX                 ; Ano-> PILHA
-		XOR CX,CX              	; limpa CX
-		MOV CL, DH              ; Mes para CL
-		PUSH CX                 ; Mes-> PILHA
-		MOV CL, DL				; Dia para CL
-		PUSH CX                 ; Dia -> PILHA
-		XOR DH,DH                    
-		XOR	SI,SI
-; DIA ------------------ 
-; DX=DX/AX --- RESTO DX   
-		XOR DX,DX               ; Limpa DX
-		POP AX                  ; Tira dia da pilha
-		MOV CX, 0               ; CX = 0 
-		MOV BX, 10              ; Divisor
-		MOV	CX,2
-DD_DIV:                         
-		DIV BX                  ; Divide por 10
-		PUSH DX                 ; Resto para pilha
-		MOV DX, 0               ; Limpa resto
-		loop dd_div
-		MOV	CX,2
-DD_RESTO:
-		POP DX                  ; Resto da divisao
-		ADD DL, 30h             ; ADD 30h (2) to DL
-		MOV DDMMAAAA[SI],DL
-		INC	SI
-		LOOP DD_RESTO            
-		MOV DL, '/'             ; Separador
-		MOV DDMMAAAA[SI],DL
-		INC SI
-; MES -------------------
-; DX=DX/AX --- RESTO DX
-		MOV DX, 0               ; Limpar DX
-		POP AX                  ; Tira mes da pilha
-		XOR CX,CX               
-		MOV BX, 10				; Divisor
-		MOV CX,2
-MM_DIV:                         
-		DIV BX                  ; Divisao or 10
-		PUSH DX                 ; Resto para pilha
-		MOV DX, 0               ; Limpa resto
-		LOOP MM_DIV
-		MOV CX,2 
-MM_RESTO:
-		POP DX                  ; Resto
-		ADD DL, 30h             ; SOMA 30h
-		MOV DDMMAAAA[SI],DL
-		INC SI		
-		LOOP MM_RESTO
-		
-		MOV DL, '/'             ; Character to display goes in DL
-		MOV DDMMAAAA[SI],DL
-		INC SI
- 
-;  ANO ----------------------
-		MOV DX, 0               
-		POP AX                  ; mes para AX
-		MOV CX, 0               ; 
-		MOV BX, 10              ; 
- AA_DIV:                         
-		DIV BX                   
-		PUSH DX                 ; Guarda resto
-		ADD CX, 1               ; Soma 1 contador
-		MOV DX, 0               ; Limpa resto
-		CMP AX, 0               ; Compara quotient com zero
-		JNE AA_DIV              ; Se nao zero
-AA_RESTO:
-		POP DX                  
-		ADD DL, 30h             ; ADD 30h (2) to DL
-		MOV DDMMAAAA[SI],DL
-		INC SI
-		LOOP AA_RESTO
-		POPF
-		POP SI
-		POP DX
-		POP CX
-		POP BX
-		POP AX
- 		RET 
-HOJE   ENDP 
-
-
-;********************************************************************************
-;********************************************************************************
 ;ROTINA PARA APAGAR ECRAN
 
 APAGA_ECRAN	PROC
@@ -280,6 +174,31 @@ APAGA:
 APAGA_ECRAN	ENDP
 
 ;********************************************************************************
+; LEITURA DE UMA TECLA DO TECLADO 
+; LE UMA TECLA	E DEVOLVE VALOR EM AH E AL
+; SE ah=0 É UMA TECLA NORMAL
+; SE ah=1 É UMA TECLA EXTENDIDA
+; AL DEVOLVE O CÓDIGO DA TECLA PREMIDA
+LE_SPACE	PROC
+sem_tecla:
+		MOV	AH,0BH
+		INT 21h
+		cmp AL,0
+		je	sem_tecla
+		
+	
+		
+		MOV	AH,08H
+		INT	21H
+		MOV	AH,0
+		CMP	AL,0
+		JNE	SAI_TECLA
+		MOV	AH, 08H
+		INT	21H
+		MOV	AH,1
+SAI_TECLA:	
+		RET
+LE_SPACE	ENDP
 ;********************************************************************************
 ; LEITURA DE UMA TECLA DO TECLADO 
 ; LE UMA TECLA	E DEVOLVE VALOR EM AH E AL
@@ -308,10 +227,6 @@ SAI_TECLA:
 		RET
 LE_TECLA	ENDP
 
-
-
-
-;********************************************************************************
 ;********************************************************************************
 ; Imprime o tempo e a data no monitor
 
@@ -389,9 +304,8 @@ Trata_Horas PROC
 		jne 	divisao_temp	
 
 		MOSTRA	String_tempo
-		cmp		Segundos_jogo, 110
-		je		PERDEU
-	
+		cmp		Segundos_jogo, 100
+		je		ESTADO
 	
 fim_horas:		
 		goto_xy	POSx,POSy			; Volta a colocar o cursor onde estava antes de actualizar as horas
@@ -401,20 +315,9 @@ fim_horas:
 		POP CX
 		POP BX
 		POP AX
-		RET		
-
-PERDEU:
-		goto_xy 25, 21
-		MOSTRA Fim_Perdeu
-		mov	Segundos_jogo, 0
-		jmp fim
-
-fim: 
-		mov		ah, 4ch ; Não é bem assim que quero acabar, tenho de ver uma maneira melhor
-		int		21h
+		RET
 
 Trata_Horas ENDP
-
 
 ;########################################################################
 
@@ -486,7 +389,6 @@ NOBACK:
 		inc		NUMDIG			; incrementa o numero de digitos
 
 ESTEND:	jmp	CICLO			; Tecla extendida não é tratada neste programa 
-
 OKNUM:	goto_xy	20,16
 		MOSTRA	NUM_SP			
 		goto_xy	20,16		
@@ -498,51 +400,18 @@ OKNUM:	goto_xy	20,16
 		jmp		NOVON		; Vai ler novo numero
 
 fim:	ret
-
 teclanum ENDP
-
-;########################################################################
-;goto_xy	macro		POSx,POSy
-;		mov		ah,02h
-;		mov		bh,0		; numero da p�gina
-;		mov		dl,POSx
-;		mov		dh,POSy
-;		int		10h
-;endm
-
-;########################################################################
-; MOSTRA - Faz o display de uma string terminada em $
-
-;MOSTRA MACRO STR 
-;	mov AH,09H
-;	lea DX,STR 
-;	int 21H
-;ENDM
-
-; FIM DAS MACROS
-
-
-
-;ROTINA PARA APAGAR ECRAN
-
-;apaga_ecran	proc
-;			mov		ax,0B800h
-;			mov		es,ax
-;			xor		bx,bx
-;			mov		cx,25*80
-;		
-;apaga:		mov		byte ptr es:[bx],' '
-;			mov		byte ptr es:[bx+1],7
-;			inc		bx
-;			inc 	bx
-;			loop	apaga
-;			ret
-;apaga_ecran	endp
 
 ;########################################################################
 ; IMP_MENU
 
 IMP_MENU	PROC
+
+		goto_xy		0,0
+		call 		apaga_ecran
+		mov			ax,0B800h
+		mov			es,ax
+
 ShowMenu:
 		;abre ficheiro
         mov     ah,3dh
@@ -550,7 +419,7 @@ ShowMenu:
         lea     dx,Menu
         int     21h
         jc      erro_abrir
-        mov     HandleFich,ax
+        mov     HandleMenu,ax
         jmp     ler_ciclo
 
 erro_abrir:
@@ -561,15 +430,15 @@ erro_abrir:
 
 ler_ciclo:
         mov     ah,3fh
-        mov     bx,HandleFich
+        mov     bx,HandleMenu
         mov     cx,1
-        lea     dx,car_fich
+        lea     dx,car_Menu
         int     21h
 		jc		erro_ler
 		cmp		ax,0		;EOF?
 		je		fecha_ficheiro
         mov     ah,02h
-		mov		dl,car_fich
+		mov		dl,car_Menu
 		int		21h
 		jmp		ler_ciclo
 
@@ -580,7 +449,7 @@ erro_ler:
 
 fecha_ficheiro:
         mov     ah,3eh
-        mov     bx,HandleFich
+        mov     bx,HandleMenu
         int     21h
         jnc     sai_f
 
@@ -602,35 +471,280 @@ getnum:
     cmp     al, "1"
     je      Jogo
     cmp     al, "2"
-    je      ShowAbout
+    je      ShowTOP10
     cmp     al, "3"
     jmp     Quit
-;    cmp     al, "4"
-;    jmp     CodeForMenu4
-;    etc...
         
 Quit: 
    mov   ah,4ch
    int   21h   
 
-Showabout:       
-    lea     dx, About  
-    mov     ah, 09h 
-    int     21h    
-    jmp     ShowMenu
+ShowTOP10:
+	jmp		IMP_TOP10
     
 Jogo:
-	call	apaga_ecran
+	jmp		IMP_NIVEIS
+
+fim: 
+	ret
+		
+IMP_MENU	endp
+
+;########################################################################
+; IMP_TOP10
+
+IMP_TOP10	PROC
+		goto_xy		0,0
+		call 		apaga_ecran
+		mov			ax,0B800h
+		mov			es,ax
+
+ShowMenu:
+		;abre ficheiro
+        mov     ah,3dh
+        mov     al,0
+        lea     dx,Top10
+        int     21h
+        jc      erro_abrir
+        mov     HandleTOP10,ax
+        jmp     ler_ciclo
+
+erro_abrir:
+        mov     ah,09h
+        lea     dx,Erro_Open
+        int     21h
+        jmp     sai_f
+
+ler_ciclo:
+        mov     ah,3fh
+        mov     bx,HandleTOP10
+        mov     cx,1
+        lea     dx,car_TOP10
+        int     21h
+		jc		erro_ler
+		cmp		ax,0		;EOF?
+		je		fecha_ficheiro
+        mov     ah,02h
+		mov		dl,car_TOP10
+		int		21h
+		jmp		ler_ciclo
+
+erro_ler:
+        mov     ah,09h
+        lea     dx,Erro_Ler_Msg
+        int     21h
+
+fecha_ficheiro:
+        mov     ah,3eh
+        mov     bx,HandleTOP10
+        int     21h
+        jnc     sai_f
+
+        mov     ah,09h
+        lea     dx,Erro_Close
+        Int     21h
+sai_f:	
+		jmp getnum
+
+getnum:        
+    mov     ah, 1 
+    int     21h        
+    
+    cmp     al, '6' 
+    jl      ShowMenu   
+    cmp     al, '6'
+    jg      ShowMenu 
+        
+    cmp     al, "6"
+    je      IMP_MENU
 
 fim: 
 			ret
 		
-IMP_MENU	endp
+IMP_TOP10	endp
+
+;########################################################################
+; IMP_NIVEIS
+
+IMP_NIVEIS	PROC
+
+		goto_xy		0,0
+		call 		apaga_ecran
+		mov			ax,0B800h
+		mov			es,ax
+
+ShowMenu:
+		;abre ficheiro
+        mov     ah,3dh
+        mov     al,0
+        lea     dx,Niveis
+        int     21h
+        jc      erro_abrir
+        mov     HandleNiveis,ax
+        jmp     ler_ciclo
+
+erro_abrir:
+        mov     ah,09h
+        lea     dx,Erro_Open
+        int     21h
+        jmp     sai_f
+
+ler_ciclo:
+        mov     ah,3fh
+        mov     bx,HandleNiveis
+        mov     cx,1
+        lea     dx,car_Niveis
+        int     21h
+		jc		erro_ler
+		cmp		ax,0		;EOF?
+		je		fecha_ficheiro
+        mov     ah,02h
+		mov		dl,car_Niveis
+		int		21h
+		jmp		ler_ciclo
+
+erro_ler:
+        mov     ah,09h
+        lea     dx,Erro_Ler_Msg
+        int     21h
+
+fecha_ficheiro:
+        mov     ah,3eh
+        mov     bx,HandleNiveis
+        int     21h
+        jnc     sai_f
+
+        mov     ah,09h
+        lea     dx,Erro_Close
+        Int     21h
+sai_f:	
+		jmp getnum
+
+getnum:        
+    mov     ah, 1 
+    int     21h        
+    
+    cmp     al, '1' 
+    jl      ShowMenu   
+    cmp     al, '6'
+    jg      ShowMenu 
+        
+    cmp     al, "1"
+    je      LVL1
+    cmp     al, "2"
+    je      LVL2
+    cmp     al, "3"
+    je     	LVL3
+	cmp     al, "4"
+    je     	LVL4
+	cmp     al, "5"
+    je     	LVL5
+	cmp     al, "6"
+    je     Volta_Menu
+        
+Volta_Menu: 
+   jmp		IMP_MENU
+LVL1:
+	call 	LIMPA_VAR
+	mov		Segundos_jogo, 0
+	mov		Fich[4], '1'
+	xor 	di,di
+	repete1:
+			mov		al, String_nome1[di]
+			cmp     al, '$'
+			je     	final1
+			mov		String_nome[di], al
+			inc 	di
+			jmp     repete1
+	final1:
+	jmp		IMP_FICH
+LVL2:
+	call 	LIMPA_VAR
+	mov		Segundos_jogo, 0
+	mov 	Fich[4], '2'
+	xor 	di,di
+	repete2:
+			mov		al, String_nome2[di]
+			cmp     al, '$'
+			je     	final2
+			mov		String_nome[di], al
+			inc 	di
+			jmp     repete2
+	final2:
+	jmp		IMP_FICH
+LVL3:
+	call 	LIMPA_VAR
+	mov		Segundos_jogo, 0
+	mov 	Fich[4], '3'
+	xor 	di,di
+	repete3:
+			mov		al, String_nome3[di]
+			cmp     al, '$'
+			je     	final3
+			mov		String_nome[di], al
+			inc 	di
+			jmp     repete3
+	final3:
+	jmp		IMP_FICH
+LVL4:
+	call 	LIMPA_VAR
+	mov		Segundos_jogo, 0
+	mov 	Fich[4], '4'
+	xor 	di,di
+	repete4:
+			mov		al, String_nome4[di]
+			cmp     al, '$'
+			je     	final4
+			mov		String_nome[di], al
+			inc 	di
+			jmp     repete4
+	final4:
+	jmp		IMP_FICH
+LVL5:
+	call 	LIMPA_VAR
+	mov		Segundos_jogo, 0
+	mov 	Fich[4], '5'
+	xor 	di,di
+	repete5:
+			mov		al, String_nome5[di]
+			cmp     al, '$'
+			je     	final5
+			mov		String_nome[di], al
+			inc 	di
+			jmp     repete5
+	final5:
+	jmp		IMP_FICH
+
+fim: 
+			ret
+		
+IMP_NIVEIS	endp
+
+;########################################################################
+; Limpa String Nome 
+
+LIMPA_VAR PROC
+	push 	si 
+	xor 	si,si
+	ciclo:
+		cmp string_nome[si], '$'
+		je 	fora
+		mov string_nome[si], ' '
+		inc si
+		jmp ciclo
+	fora:
+		pop si
+		ret
+LIMPA_VAR ENDP
 
 ;########################################################################
 ; IMP_FICH
 
 IMP_FICH	PROC
+		call 		apaga_ecran
+		mov			ax,0B800h
+		mov			es,ax
+		mov 		Segundos_jogo, 0
 
 		;abre ficheiro
         mov     ah,3dh
@@ -681,24 +795,6 @@ sai_f:
 IMP_FICH	endp		
 
 ;########################################################################
-; LE UMA TECLA	
-
-;LE_TECLA	PROC
-		
-;		mov		ah,08h
-;		int		21h
-;		mov		ah,0
-;		cmp		al,0
-;		jne		SAI_TECLA
-;		mov		ah, 08h
-;		int		21h
-;		mov		ah,1
-;SAI_TECLA:	RET
-;LE_TECLA	endp
-
-
-
-;########################################################################
 ; Avatar
 
 AVATAR	PROC
@@ -713,9 +809,9 @@ AVATAR	PROC
 			mov		Cor, ah			; Guarda a cor que est� na posi��o do Cursor
 
 			goto_xy 9,20
-			MOSTRA	String_nome1	
+			MOSTRA	String_nome	
 			goto_xy 9,21
-			MOSTRA	Construir_nome1
+			MOSTRA	Construir_nome
 					
 CICLO:	
 			goto_xy	POSxa,POSya		; Vai para a posi��o anterior do cursor
@@ -740,25 +836,27 @@ CICLO:
 			MOSTRA	String_TJmax
 
 			goto_xy	POSx,POSy
-			cmp		al, String_nome1[si]
-			jne		IMPRIME
-			mov  	al, String_nome1[si]
-			mov		Construir_nome1[si], al
+			xor 	si,si
+			cmp 	al, 32
+			je		IMPRIME
+			cmp		al, String_nome[si]
+			jne		limpa
+			mov  	al, String_nome[si]
+			mov		Construir_nome[si], al
 			inc 	si
 			xor 	di,di
 			repete:
-			mov		al, String_nome1[di]
+			mov		al, String_nome[di]
 			cmp     al, '$'
-			je     	GANHOU ;acertou
-			cmp		Construir_nome1[di], al
+			je     	ESTADO ;acertou
+			cmp		Construir_nome[di], al
 			goto_xy 9,21
-			MOSTRA	Construir_nome1
+			MOSTRA	Construir_nome
 			goto_xy	POSx,POSy
 			jne 	IMPRIME ;diferentes
 			inc 	di
 			jmp     repete
 			;goto_xy	POSx,POSy		; Vai para posi��o do cursor
-			
 
 IMPRIME:	
 			mov		ah, 02h
@@ -858,30 +956,49 @@ DEC_X:
 			int		10h	
 			jmp 	LER_SETA
 
-GANHOU:
-			;call apaga_ecran
-			goto_xy 25, 21
-			MOSTRA Fim_Ganhou
-			jmp fim
-			;jmp fim
-
 fim:				
 			ret
 AVATAR		endp
 
-;########################################################################
-; Mostra menu após dar ESCAPE
-;########################################################################
-MOSTRA_MENU PROC
-			call 	apaga_ecran
-			jmp		IMP_MENU
-MOSTRA_MENU endp
+;********************************************************************************
+; ESTADO
+ESTADO PROC
+	cmp		Segundos_jogo, 100
+	je		PERDEU
+	inc 	EstadoJogo
+	cmp		EstadoJogo, 1
+	je 		GANHOU
+
+	PERDEU:
+			goto_xy 	25, 20
+			MOSTRA 		Fim_Perdeu
+			goto_xy		25, 21
+			MOSTRA		Voltar_Menu
+			mov			Segundos_jogo, 0
+			jmp			LE_ESPACO
+	GANHOU:
+			goto_xy 	25, 20
+			MOSTRA 		Fim_Ganhou
+			goto_xy		25, 21
+			MOSTRA		Voltar_Menu
+			mov			Segundos_jogo, 0
+			jmp			LE_ESPACO
+
+	fim:
+			mov			ah,4CH
+			INT			21H
+
+	LE_ESPACO:
+			call	LE_SPACE
+			cmp 	al, 27	; SPACE
+			je		IMP_MENU
+
+ESTADO ENDP
+
 ;########################################################################
 Main  proc
 		mov			ax, dseg
 		mov			ds,ax
-		
-		xor 		si,si
 
 		mov			ax,0B800h
 		mov			es,ax
@@ -891,6 +1008,7 @@ Main  proc
 		goto_xy		0,0
 		call		IMP_FICH
 		call 		AVATAR
+		call		ESTADO
 		goto_xy		0,22
 		
 		mov			ah,4CH
