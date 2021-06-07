@@ -60,6 +60,7 @@ dseg	segment para public 'data'
 		Tempo_j			dw		0				; Guarda O Tempo que decorre o  jogo
 		Tempo_limite	dw		100				; tempo m�ximo de Jogo
 		String_TJmax	db		"    /100$"
+		String_tempo	db		"   s $"
 
 		String_num 		db 		"  0 $"
         String_nome1  	db	    "TAC $"
@@ -72,6 +73,7 @@ dseg	segment para public 'data'
 		Construir_nome3	db	    "        $"
 		Construir_nome4	db	    "         $"
 		Construir_nome5	db	    "             $"
+
 		Dim_nome1		dw		4	; Comprimento do Nome
 		Dim_nome2		dw		5
 		Dim_nome3		dw		8
@@ -368,26 +370,27 @@ Trata_Horas PROC
 		
 
 		inc 	Segundos_jogo
-		mov		ax, Segundos_jogo
-		mov 	bl, 10     
-		div 	bl
-		add 	al, 30h				; Caracter Correspondente às dezenas
-		add		ah,	30h				; Caracter Correspondente às unidades
-		mov		STR12[0], '0'
-		mov		STR12[1], al
-		mov		STR12[2], ah
-		mov 	STR12[3],'s'		
+		mov 	STR12[0],'0'
+		mov 	STR12[1],'0'
+		mov 	STR12[2],'0'
+		mov 	STR12[3],'s'
 		mov 	STR12[4],'$'
+		mov		ax, Segundos_jogo
+		mov		si, 2
+	
+	divisao_temp:
+		mov 	bl, 10   
+		div 	bl
+		add		ah,	30h				; Caracter Correspondente às unidades
+		mov		String_tempo[si], ah
+		mov		ah, 0		
+		dec		si
+		cmp		al, 0
+		jne 	divisao_temp	
 
-
-
-
-		MOSTRA	STR12
+		MOSTRA	String_tempo
 		cmp		Segundos_jogo, 110
 		je		PERDEU
-
-
-	
 	
 	
 fim_horas:		
@@ -733,7 +736,7 @@ CICLO:
 
 			
 
-			goto_xy 57,0
+			goto_xy 58,0
 			MOSTRA	String_TJmax
 
 			goto_xy	POSx,POSy
