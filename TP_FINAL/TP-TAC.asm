@@ -1,23 +1,23 @@
-;------------------------------------------------------------------------
+;********************************************************************************	
 ;	TRABALHO PRATICO - TECNOLOGIAS e ARQUITECTURAS de COMPUTADORES
 ;   
 ;	ANO LECTIVO 2020/2021
-;--------------------------------------------------------------
+;********************************************************************************	
 ; 	Realizado por:
 ;
 ;	Rafael Couto		2019142454	a2019142454@isec.pt
 ;	Rodrigo Ferreira	2019138331	a2019138331@isec.pt
 ;
-;------------------------------------------------------------------------
+;********************************************************************************	
 ; MACROS
-;------------------------------------------------------------------------
+;********************************************************************************	
 ;MACRO GOTO_XY 
 ; COLOCA O CURSOR NA POSIÇÃO POSX,POSY
 ;	POSX -> COLUNA
 ;	POSY -> LINHA
 ; 	REGISTOS USADOS
 ;		AH, BH, DL,DH (DX)
-;------------------------------------------------------------------------
+;********************************************************************************	
 GOTO_XY		MACRO	POSX,POSY
 			MOV	AH,02H
 			MOV	BH,0
@@ -25,17 +25,17 @@ GOTO_XY		MACRO	POSX,POSY
 			MOV	DH,POSY
 			INT	10H
 ENDM
-;--------------------------------------------------------------
+;********************************************************************************	
 ; MOSTRA - Faz o display de uma string terminada em $
-;---------------------------------------------------------------------------
+;********************************************************************************	
 MOSTRA MACRO STR 
 MOV AH,09H
 LEA DX,STR 
 INT 21H
 ENDM
-;---------------------------------------------------------------------------
+;********************************************************************************	
 ; FIM DAS MACROS
-;---------------------------------------------------------------------------
+;********************************************************************************	
 
 .8086
 .model small
@@ -109,9 +109,10 @@ cseg	segment para public 'code'
 assume		cs:cseg, ds:dseg
 
 ;********************************************************************************
-;********************************************************************************
 ; HORAS  - LE Hora DO SISTEMA E COLOCA em tres variaveis (Horas, Minutos, Segundos)
-; CH - Horas, CL - Minutos, DH - Segundos
+; 	CH - Horas, CL - Minutos, DH - Segundos
+;	Faz contagem de tempo de jogo para saber quando e que o jogador perdeu por 
+;	limite de tempo excedido.
 ;********************************************************************************	
 
 Ler_TEMPO PROC	
@@ -148,6 +149,7 @@ Ler_TEMPO   ENDP
 
 ;********************************************************************************
 ;ROTINA PARA APAGAR ECRAN
+;********************************************************************************	
 
 APAGA_ECRAN	PROC
 		PUSH BX
@@ -179,6 +181,7 @@ APAGA_ECRAN	ENDP
 ; SE ah=0 É UMA TECLA NORMAL
 ; SE ah=1 É UMA TECLA EXTENDIDA
 ; AL DEVOLVE O CÓDIGO DA TECLA PREMIDA
+;********************************************************************************	
 LE_TECLA	PROC
 sem_tecla:
 		call Trata_Horas
@@ -203,6 +206,7 @@ LE_TECLA	ENDP
 
 ;********************************************************************************
 ; Imprime o tempo e a data no monitor
+;********************************************************************************	
 
 Trata_Horas PROC
 
@@ -295,7 +299,7 @@ fim_horas:
 
 Trata_Horas ENDP
 
-;########################################################################
+;********************************************************************************	
 
 teclanum  proc
 		mov	ax, dseg
@@ -378,8 +382,11 @@ OKNUM:	goto_xy	20,16
 fim:	ret
 teclanum ENDP
 
-;########################################################################
+;********************************************************************************	
 ; IMP_MENU
+;	Imprime ficheiro .txt relativo ao menu
+;	Aguarda introducao de opcao do menu
+;********************************************************************************	
 
 IMP_MENU	PROC
 
@@ -447,7 +454,7 @@ getnum:
     cmp     al, "1"
     je      Jogo
     cmp     al, "2"
-    je      ShowTOP10
+    je      MostraTOP10
     cmp     al, "3"
     jmp     Quit
         
@@ -455,7 +462,7 @@ Quit:
    mov   ah,4ch
    int   21h   
 
-ShowTOP10:
+MostraTOP10:
 	jmp		IMP_TOP10
     
 Jogo:
@@ -466,8 +473,11 @@ fim:
 		
 IMP_MENU	endp
 
-;########################################################################
+;********************************************************************************	
 ; IMP_TOP10
+;	Imprime ficheiro .txt relativo ao top10
+;	Aguarda ate o utilizador decidir retomar ao menu
+;********************************************************************************	
 
 IMP_TOP10	PROC
 		goto_xy		0,0
@@ -475,7 +485,7 @@ IMP_TOP10	PROC
 		mov			ax,0B800h
 		mov			es,ax
 
-ShowMenu:
+ShowTOP10:
 		;abre ficheiro
         mov     ah,3dh
         mov     al,0
@@ -527,9 +537,9 @@ getnum:
     int     21h        
     
     cmp     al, '6' 
-    jl      ShowMenu   
+    jl      ShowTOP10   
     cmp     al, '6'
-    jg      ShowMenu 
+    jg      ShowTOP10 
         
     cmp     al, "6"
     je      IMP_MENU
@@ -539,8 +549,13 @@ fim:
 		
 IMP_TOP10	endp
 
-;########################################################################
+;********************************************************************************	
 ; IMP_NIVEIS
+;	Imprime ficheiro .txt relativo ao menu de niveis
+;	Aguarda que o utilizador selecione o menu ou retome ao menu principal
+;	Selecao do nivel de jogo carrega palavra a completar para a string_nome
+;	e modifica ficheiro de jogo a carregar consoante a escolha do nivel
+;********************************************************************************	
 
 IMP_NIVEIS	PROC
 
@@ -549,7 +564,7 @@ IMP_NIVEIS	PROC
 		mov			ax,0B800h
 		mov			es,ax
 
-ShowMenu:
+ShowNiveis:
 		;abre ficheiro
         mov     ah,3dh
         mov     al,0
@@ -601,9 +616,9 @@ getnum:
     int     21h        
     
     cmp     al, '1' 
-    jl      ShowMenu   
+    jl      ShowNiveis   
     cmp     al, '6'
-    jg      ShowMenu 
+    jg      ShowNiveis
         
     cmp     al, "1"
     je      LVL1
@@ -696,8 +711,12 @@ fim:
 		
 IMP_NIVEIS	endp
 
-;########################################################################
+;********************************************************************************	
 ; IMP_FICH
+;	Imprime ficheiro .txt relativo ao labirinto
+;	Apos selecao de nivel no IMP_NIVEIS, carrega o nivel escolhido e imprime 
+;	ficheiro designado para o nivel
+;********************************************************************************	
 
 IMP_FICH	PROC
 		call 		apaga_ecran
@@ -753,8 +772,14 @@ sai_f:
 		
 IMP_FICH	endp		
 
-;########################################################################
+;********************************************************************************	
 ; Avatar
+;	Processo que trata de toda a funcionalidade do Avatar, desde movimentacao
+;	a copia e colagem do avatar nas sucessivas movimentacoes.
+;	Permite recuar ao menu principal pressionando a tecla "ESC".
+;	Faz verificacao de igualdade entre a string_nome e construir_nome
+;	 e salta para a funcao ESTADO para verificar se ganhou ou perdeu.
+;********************************************************************************	
 
 AVATAR	PROC
 			mov		ax,0B800h
@@ -914,8 +939,12 @@ fim:
 			ret
 AVATAR		endp
 
-;########################################################################
-; Limpa String Nome 
+;********************************************************************************	
+; LIMPA_VAR
+;	Processo que limpa Construir_Nome na selecao de cada nivel de modo a que 
+;	nao fique registado o que foi jogado no nivel 1 quando avancar para o
+;	nivel 2, por exemplo.
+;********************************************************************************	
 
 LIMPA_VAR PROC
 	push 	si 
@@ -937,6 +966,8 @@ LIMPA_VAR ENDP
 ; SE ah=0 É UMA TECLA NORMAL
 ; SE ah=1 É UMA TECLA EXTENDIDA
 ; AL DEVOLVE O CÓDIGO DA TECLA PREMIDA
+;********************************************************************************	
+
 LE_SPACE	PROC
 sem_tecla:
 		MOV	AH,0BH
@@ -960,6 +991,11 @@ LE_SPACE	ENDP
 
 ;********************************************************************************
 ; ESTADO
+;	Processo que avalia se o jogador perdeu ou ganhou consante reunidas certas
+;	condicoes como tempo limite excedido ou string_nome igual a construir_nome
+;	Permite voltar ao menu principal pressionando a tecla "ESC".
+;********************************************************************************	
+
 ESTADO PROC
 	cmp		Segundos_jogo, 100
 	je		PERDEU
@@ -995,7 +1031,9 @@ ESTADO PROC
 
 ESTADO ENDP
 
-;########################################################################
+;********************************************************************************	
+;	MAIN
+;********************************************************************************	
 Main  proc
 		mov			ax, dseg
 		mov			ds,ax
