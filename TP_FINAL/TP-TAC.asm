@@ -11,7 +11,7 @@
 ;------------------------------------------------------------------------
 ; MACROS
 ;------------------------------------------------------------------------
-;MACRO GOTO_XY
+;MACRO GOTO_XY 
 ; COLOCA O CURSOR NA POSIÇÃO POSX,POSY
 ;	POSX -> COLUNA
 ;	POSY -> LINHA
@@ -55,7 +55,7 @@ dseg	segment para public 'data'
 		Horas			dw		0				; Vai guardar a HORA actual
 		Minutos			dw		0				; Vai guardar os minutos actuais
 		Segundos		dw		0				; Vai guardar os segundos actuais
-		Segundos_jogo	dw		95				; Vai guardar os segundos de jogo
+		Segundos_jogo	dw		0				; Vai guardar os segundos de jogo
 		Old_seg			dw		0				; Guarda os �ltimos segundos que foram lidos
 		Tempo_init		dw		0				; Guarda O Tempo de inicio do jogo
 		Tempo_j			dw		0				; Guarda O Tempo que decorre o  jogo
@@ -72,12 +72,12 @@ dseg	segment para public 'data'
 		String_nome3  	db	    "COIMBRA $"
 		String_nome4  	db	    "ASSEMBLY $"	
 		String_nome5  	db	    "COMPUTADORES $"
-		Construir_nome	db	    20 dup(' '),"$"
+		Construir_nome	db	    20 dup(' '),'$'
 		indice_nome		dw		0	; indice que aponta para Construir_nome
 		
 		Fim_Ganhou		db	    " Ganhou! $"	
 		Fim_Perdeu		db	    " Perdeu! $"
-		Voltar_Menu		db		" Para voltar ao menu pressione a tecla Space... $"	
+		Voltar_Menu		db		" Para voltar ao menu pressione a tecla ESC... $"	
 
         Erro_Open       db      'Erro ao tentar abrir o ficheiro$'
         Erro_Ler_Msg    db      'Erro ao tentar ler do ficheiro$'
@@ -179,32 +179,6 @@ APAGA_ECRAN	ENDP
 ; SE ah=0 É UMA TECLA NORMAL
 ; SE ah=1 É UMA TECLA EXTENDIDA
 ; AL DEVOLVE O CÓDIGO DA TECLA PREMIDA
-LE_SPACE	PROC
-sem_tecla:
-		MOV	AH,0BH
-		INT 21h
-		cmp AL,0
-		je	sem_tecla
-		
-	
-		
-		MOV	AH,08H
-		INT	21H
-		MOV	AH,0
-		CMP	AL,0
-		JNE	SAI_TECLA
-		MOV	AH, 08H
-		INT	21H
-		MOV	AH,1
-SAI_TECLA:	
-		RET
-LE_SPACE	ENDP
-;********************************************************************************
-; LEITURA DE UMA TECLA DO TECLADO 
-; LE UMA TECLA	E DEVOLVE VALOR EM AH E AL
-; SE ah=0 É UMA TECLA NORMAL
-; SE ah=1 É UMA TECLA EXTENDIDA
-; AL DEVOLVE O CÓDIGO DA TECLA PREMIDA
 LE_TECLA	PROC
 sem_tecla:
 		call Trata_Horas
@@ -236,7 +210,8 @@ Trata_Horas PROC
 		PUSH AX
 		PUSH BX
 		PUSH CX
-		PUSH DX		
+		PUSH DX
+		PUSH BP
 
 		call 	Ler_TEMPO				; Horas MINUTOS e segundos do Sistema
 		
@@ -291,15 +266,15 @@ Trata_Horas PROC
 		mov 	STR12[3],'s'
 		mov 	STR12[4],'$'
 		mov		ax, Segundos_jogo
-		mov		si, 2
+		mov		bp, 2
 	
 	divisao_temp:
 		mov 	bl, 10   
 		div 	bl
 		add		ah,	30h				; Caracter Correspondente às unidades
-		mov		String_tempo[si], ah
+		mov		String_tempo[bp], ah
 		mov		ah, 0		
-		dec		si
+		dec		bp
 		cmp		al, 0
 		jne 	divisao_temp	
 
@@ -315,6 +290,7 @@ fim_horas:
 		POP CX
 		POP BX
 		POP AX
+		POP BP
 		RET
 
 Trata_Horas ENDP
@@ -656,7 +632,7 @@ LVL1:
 			mov		String_nome[di], al
 			inc 	di
 			jmp     repete1
-	final1:
+	final1: 
 	jmp		IMP_FICH
 LVL2:
 	call 	LIMPA_VAR
@@ -721,23 +697,6 @@ fim:
 IMP_NIVEIS	endp
 
 ;########################################################################
-; Limpa String Nome 
-
-LIMPA_VAR PROC
-	push 	si 
-	xor 	si,si
-	ciclo:
-		cmp string_nome[si], '$'
-		je 	fora
-		mov string_nome[si], ' '
-		inc si
-		jmp ciclo
-	fora:
-		pop si
-		ret
-LIMPA_VAR ENDP
-
-;########################################################################
 ; IMP_FICH
 
 IMP_FICH	PROC
@@ -789,7 +748,7 @@ fecha_ficheiro:
         mov     ah,09h
         lea     dx,Erro_Close
         Int     21h
-sai_f:	
+sai_f:
 		RET
 		
 IMP_FICH	endp		
@@ -836,16 +795,13 @@ CICLO:
 			MOSTRA	String_TJmax
 
 			goto_xy	POSx,POSy
-			xor 	si,si
-			cmp 	al, 32
-			je		IMPRIME
 			cmp		al, String_nome[si]
-			jne		limpa
+			jne		IMPRIME
 			mov  	al, String_nome[si]
 			mov		Construir_nome[si], al
 			inc 	si
 			xor 	di,di
-			repete:
+		repete:
 			mov		al, String_nome[di]
 			cmp     al, '$'
 			je     	ESTADO ;acertou
@@ -868,8 +824,6 @@ IMPRIME:
 			mov		POSxa, al
 			mov		al, POSy	; Guarda a posi��o do cursor
 			mov 	POSya, al
-
-
 		
 LER_SETA:	call 	LE_TECLA
 			cmp		ah, 1
@@ -960,6 +914,50 @@ fim:
 			ret
 AVATAR		endp
 
+;########################################################################
+; Limpa String Nome 
+
+LIMPA_VAR PROC
+	push 	si 
+	xor 	si,si
+	ciclo:
+		cmp Construir_nome[si], '$'
+		je 	fora
+		mov Construir_nome[si], ' '
+		inc si
+		jmp ciclo
+	fora:
+		pop si
+		ret
+LIMPA_VAR ENDP
+
+;********************************************************************************
+; LEITURA DE UMA TECLA DO TECLADO 
+; LE UMA TECLA	E DEVOLVE VALOR EM AH E AL
+; SE ah=0 É UMA TECLA NORMAL
+; SE ah=1 É UMA TECLA EXTENDIDA
+; AL DEVOLVE O CÓDIGO DA TECLA PREMIDA
+LE_SPACE	PROC
+sem_tecla:
+		MOV	AH,0BH
+		INT 21h
+		cmp AL,0
+		je	sem_tecla
+		
+	
+		
+		MOV	AH,08H
+		INT	21H
+		MOV	AH,0
+		CMP	AL,0
+		JNE	SAI_TECLA
+		MOV	AH, 08H
+		INT	21H
+		MOV	AH,1
+SAI_TECLA:	
+		RET
+LE_SPACE	ENDP
+
 ;********************************************************************************
 ; ESTADO
 ESTADO PROC
@@ -990,7 +988,9 @@ ESTADO PROC
 
 	LE_ESPACO:
 			call	LE_SPACE
-			cmp 	al, 27	; SPACE
+			cmp		ah, 1
+			je		LE_ESPACO
+			cmp 	al, 27	; ESC
 			je		IMP_MENU
 
 ESTADO ENDP
@@ -1000,6 +1000,8 @@ Main  proc
 		mov			ax, dseg
 		mov			ds,ax
 
+		xor			si,si
+
 		mov			ax,0B800h
 		mov			es,ax
 		
@@ -1008,7 +1010,6 @@ Main  proc
 		goto_xy		0,0
 		call		IMP_FICH
 		call 		AVATAR
-		call		ESTADO
 		goto_xy		0,22
 		
 		mov			ah,4CH
