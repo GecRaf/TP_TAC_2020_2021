@@ -636,7 +636,7 @@ getnum:
 Volta_Menu: 
    jmp		IMP_MENU
 LVL1:
-	call 	LIMPA_VAR
+	call 		LIMPA_VAR
 	mov		Segundos_jogo, 0
 	mov		Fich[4], '1'
 	xor 	di,di
@@ -1017,10 +1017,6 @@ ESTADO PROC
 			MOSTRA		Voltar_Menu
 			mov			Segundos_jogo, 0
 			jmp			LE_ESPACO
-
-	fim:
-			mov			ah,4CH
-			INT			21H
 
 	LE_ESPACO:
 			call	LE_SPACE
